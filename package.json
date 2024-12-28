@@ -1,0 +1,11 @@
+{
+  "name": "chatscript",
+  "version": "1.0.0",
+  "description": "demo repo to test chat script cicd",
+  "main": "script.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "",
+  "license": "ISC"
+}
