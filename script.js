@@ -4,4 +4,4 @@ console.log(
 )
 
 console.log('This is changed and updated ')
-console.log('Now test if cloud front cache deleted')
+console.log('Now file uploaded using role oidc')
