@@ -4,4 +4,4 @@ console.log(
 )
 
 console.log('This is changed and updated ')
-console.log('This is my latest updated file')
+console.log('Now test if cloud front cache deleted')
