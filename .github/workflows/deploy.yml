@@ -22,7 +22,7 @@ jobs:
 
       - name: Upload file to S3
         run: |
-          aws s3 cp script.js s3://${{ secrets.S3_BUCKET_NAME }}/script.js \
+          aws s3 cp ./script.js s3://${{ secrets.S3_BUCKET_NAME }}/script.js \
           --acl public-read
 
       - name: Invalidate CloudFront cache
