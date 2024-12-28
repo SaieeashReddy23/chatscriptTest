@@ -22,8 +22,11 @@ jobs:
 
       - name: Upload file to S3
         run: |
-          ls -al  # Verify the file exists in the root directory
-          aws s3 cp script.js s3://${{ secrets.S3_BUCKET_NAME }}/script.js
+          echo "Current directory content:"
+          ls -al
+          echo "Bucket Name: ${{ secrets.S3_BUCKET_NAME }}"
+          echo "Uploading script.js to S3:"
+          aws s3 cp ./script.js s3://${{ secrets.S3_BUCKET_NAME }}/script.js
 
       - name: Invalidate CloudFront cache
         run: |
