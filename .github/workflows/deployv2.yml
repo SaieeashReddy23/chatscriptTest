@@ -93,7 +93,7 @@ jobs:
 
       - name: Run Build with browsify
         run: |
-          npx browserify script.js -o $GITHUB_WORKSPACE/script.js
+          npx browserify script.js -o $GITHUB_WORKSPACE/chat.js
 
   deploy:
     runs-on: ubuntu-latest
@@ -122,7 +122,7 @@ jobs:
       - name: Upload file to S3
         run: |
           echo "Deploying to ${{ github.event.inputs.environment  }}"
-          aws s3 cp $GITHUB_WORKSPACE/script.js s3://${{ secrets.S3_BUCKET_NAME }}/script.js
+          aws s3 cp $GITHUB_WORKSPACE/chat.js s3://${{ secrets.S3_BUCKET_NAME }}/script.js
 
       - name: Invalidate CloudFront cache
         run: |
