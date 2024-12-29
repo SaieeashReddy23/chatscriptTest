@@ -1,0 +1,62 @@
+name: CI/CD Pipeline
+
+on:
+  push:
+    branches:
+      - main # Automatically triggers on push to the main branch
+  workflow_dispatch: # Allows manual triggering with environment selection
+    inputs:
+      environment:
+        description: 'Select the environment to deploy to'
+        required: true
+        type: choice
+        options:
+          - staging
+          - production
+
+permissions:
+  id-token: write
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    # Dynamically set the environment (staging or production)
+    environment: ${{ github.event.inputs.environment || 'staging' }}
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v3
+
+      - name: Set Target Environment
+        id: env_check
+        run: |
+          if [[ "${{ github.event_name }}" == "workflow_dispatch" ]]; then
+            echo "Environment selected by user: ${{ github.event.inputs.environment }}"
+            echo "env=${{ github.event.inputs.environment }}" >> $GITHUB_ENV
+          else
+            echo "Defaulting to staging for main branch pushes"
+            echo "env=staging" >> $GITHUB_ENV
+          fi
+
+      - name: Set up AWS credentials using OIDC
+        uses: aws-actions/configure-aws-credentials@v3
+        with:
+          role-to-assume: arn:aws:iam::390403889342:role/Github-action-deploy # Replace with your role ARN
+          role-session-name: github-actions-session
+          aws-region: us-east-1 # Replace with your AWS region (e.g., us-east-1)
+
+      - name: Upload file to S3
+        run: |
+          if [[ "${{ env }}" == "staging" ]]; then
+            echo "Deploying to ${{ env }}"
+            aws s3 cp ./script.js s3://${{ secrets.S3_BUCKET_NAME }}/script.js
+          else
+            echo "Deploying to ${{ env }}"
+            aws s3 cp ./script.js s3://${{ secrets.S3_BUCKET_NAME }}/script.js
+          fi
+
+      - name: Invalidate CloudFront cache
+        run: |
+          echo "Invalidating script.js in CloudFront"
+          aws cloudfront create-invalidation --distribution-id ${{ secrets.CLOUDFRONT_DISTRIBUTION_ID }} --paths "/script.js"
