@@ -1,0 +1,93 @@
+name: CI/CD Pipeline
+
+on:
+  workflow_dispatch: # Allows manual triggering with environment selection
+    inputs:
+      environment:
+        description: 'Select the environment to deploy to'
+        required: true
+        type: choice
+        options:
+          - staging
+          - production
+
+permissions:
+  id-token: write
+
+jobs:
+  setup:
+    runs-on: ubuntu-latest
+    outputs:
+      node_modules_cache: ${{ steps.cache-node-modules.outputs.cache-hit }}
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v3
+
+      - name: Set Up Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: '16' # Specify the Node.js version
+
+      - name: Cache Node Modules
+        id: cache-node-modules
+        uses: actions/cache@v3
+        with:
+          path: node_modules
+          key: ${{ runner.os }}-node-modules-${{ hashFiles('**/package-lock.json') }}
+          restore-keys: |
+            ${{ runner.os }}-node-modules-
+
+      - name: Install Dependencies
+        run: npm ci # `npm ci` is faster and ensures consistent installation
+
+  lint:
+    runs-on: ubuntu-latest
+    needs: setup # Runs only if the setup job is successful
+    steps:
+      - name: Run Linter
+        run: npm run lint # Assuming you have an ESLint configuration
+
+  test:
+    runs-on: ubuntu-latest
+    needs: lint # Runs only if linting passes
+    steps:
+      - name: Run Tests
+        run: npm test # Assuming you have a test script configured
+
+  build:
+    runs-on: ubuntu-latest
+    needs: test # Runs only if tests pass
+    steps:
+      - name: Run Build
+        run: npm run build # Runs your build script to generate the JS file
+
+      - name: Archive Build File
+        id: upload_build
+        run: |
+          # Assuming the build file is located in the 'dist' directory
+          echo "Build file path: chat.js"
+          echo "::set-output name=build_file::chat.js"
+
+  deploy:
+    runs-on: ubuntu-latest
+    needs: build # Runs only if the build step is successful
+    # Dynamically set the environment (staging or production)
+    environment: ${{ github.event.inputs.environment || 'staging' }}
+
+    steps:
+      - name: Set up AWS credentials using OIDC
+        uses: aws-actions/configure-aws-credentials@v3
+        with:
+          role-to-assume: arn:aws:iam::390403889342:role/Github-action-deploy # Replace with your role ARN
+          role-session-name: github-actions-session
+          aws-region: us-east-1 # Replace with your AWS region (e.g., us-east-1)
+
+      - name: Upload file to S3
+        run: |
+          echo "Deploying to ${{ github.event.inputs.environment  }}"
+          aws s3 cp ${needs.build.outputs.build_file} s3://${{ secrets.S3_BUCKET_NAME }}/script.js
+
+      - name: Invalidate CloudFront cache
+        run: |
+          echo "Invalidating script.js in CloudFront"
+          aws cloudfront create-invalidation --distribution-id ${{ secrets.CLOUDFRONT_DISTRIBUTION_ID }} --paths "/script.js"
