@@ -94,8 +94,6 @@ jobs:
         run: |
           mkdir -p $GITHUB_WORKSPACE/dist  # Create a directory for the output
           npx browserify script.js -o $GITHUB_WORKSPACE/dist/app.js
-        env:
-          NODE_ENV: production # Example environment variable for the build step
 
       - name: List Files in Workspace (Debugging)
         run: ls -R $GITHUB_WORKSPACE/dist # List the files in the workspace to confirm the build
@@ -122,6 +120,12 @@ jobs:
 
       - name: Install Dependencies
         run: npm ci # `npm ci` is faster and ensures consistent installation
+
+      - name: Run Build with Browserify
+        run: |
+          mkdir -p $GITHUB_WORKSPACE/dist  # Create a directory for the output
+          npx browserify script.js -o $GITHUB_WORKSPACE/dist/app.js
+
       - name: Set up AWS credentials using OIDC
         uses: aws-actions/configure-aws-credentials@v3
         with:
