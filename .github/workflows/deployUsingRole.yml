@@ -11,6 +11,7 @@ permissions:
 jobs:
   deploy:
     runs-on: ubuntu-latest
+    environment: Production # Link this job to the environment with approval
 
     steps:
       - name: Checkout code
