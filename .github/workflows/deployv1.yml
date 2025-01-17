@@ -40,4 +40,4 @@ jobs:
 
       - name: Invalidate CloudFront cache
         run: |
-          aws lambda invoke --function-name myFunc
+          aws lambda invoke --function-name myFunc response.json
