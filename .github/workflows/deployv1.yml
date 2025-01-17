@@ -1,0 +1,43 @@
+name: CI/CD Pipeline using lamda
+
+on:
+  workflow_dispatch: # Allows manual triggering with environment selection
+
+permissions:
+  id-token: write
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v3
+
+      - name: Set Up Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: '16' # Specify the Node.js version
+
+      - name: Install Dependencies
+        run: npm ci # `npm ci` is faster and ensures consistent installation
+
+      - name: Run Build with Browserify
+        run: |
+          mkdir -p $GITHUB_WORKSPACE/dist  # Create a directory for the output
+          npx browserify script.js -o $GITHUB_WORKSPACE/dist/app.js
+
+      - name: Set up AWS credentials using OIDC
+        uses: aws-actions/configure-aws-credentials@v3
+        with:
+          role-to-assume: arn:aws:iam::390403889342:role/Github-action-lambda # Replace with your role ARN
+          role-session-name: github-actions-session
+          aws-region: us-east-1 # Replace with your AWS region (e.g., us-east-1)
+
+      - name: Upload file to S3
+        run: |
+          echo "Deploying to s3"
+          aws s3 cp $GITHUB_WORKSPACE/dist/app.js s3://${{ secrets.S3_BUCKET_NAME }}/script.js
+
+      - name: Invalidate CloudFront cache
+        run: |
+          aws lambda invoke --function-name myFunc
